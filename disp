@@ -1,0 +1,72 @@
+// Пины сегментов: A, F, B, E, D, DP, C, G
+const int segPins[8] = {12, 11, 10, 9, 8, 7, 6, 5};
+// Пины 3 рабочих разрядов (слева направо)
+const int digPins[3] = {4, 2, 3};
+
+const byte digitMasks[10] = {
+  0b11111010, // 0
+  0b00100010, // 1
+  0b10111001, // 2
+  0b10101011, // 3
+  0b01100011, // 4
+  0b11001011, // 5
+  0b11011011, // 6
+  0b10100010, // 7
+  0b11111011, // 8
+  0b11101011  // 9
+};
+
+int value = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Принудительно держим пин 4-го разряда выключенным
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+
+  for (int i = 0; i < 8; i++) {
+    pinMode(segPins[i], OUTPUT);
+    digitalWrite(segPins[i], LOW);
+  }
+  for (int i = 0; i < 3; i++) {
+    pinMode(digPins[i], OUTPUT);
+    digitalWrite(digPins[i], LOW);
+  }
+  Serial.println("Введите число от 0 до 999:");
+}
+
+void showDigit(int pos, int num) {
+  // Гасим все разряды и сегменты
+  for (int i = 0; i < 3; i++) digitalWrite(digPins[i], LOW);
+  for (int i = 0; i < 8; i++) digitalWrite(segPins[i], LOW);
+  delayMicroseconds(200);
+
+  // Выставляем сегменты для нужной цифры
+  byte mask = digitMasks[num];
+  for (int i = 0; i < 8; i++) {
+    bool isOn = (mask >> (7 - i)) & 1;
+    digitalWrite(segPins[i], isOn ? HIGH : LOW);
+  }
+
+  // Включаем нужный разряд
+  digitalWrite(digPins[pos], HIGH);
+  delay(2);
+  digitalWrite(digPins[pos], LOW);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    int input = Serial.parseInt();
+    if (input >= 0 && input <= 999) {
+      value = input;
+      Serial.print("Вывод: ");
+      Serial.println(value);
+    }
+    while (Serial.available() > 0) Serial.read();
+  }
+
+  showDigit(0, (value / 100) % 10);
+  showDigit(1, (value / 10) % 10);
+  showDigit(2, value % 10);
+}
